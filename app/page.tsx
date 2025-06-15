@@ -1,16 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePapers } from '@/hooks/usePapers';
 import { useSemanticScholar } from '@/hooks/useSemanticScholar';
-import SearchBar from '@/components/SearchBar';
 import PaperList from '@/components/PaperList';
-import SearchResults from '@/components/SearchResults';
+import SearchModal from '@/components/SearchModal';
+import Logo from '@/components/Logo';
 import { SearchResult } from '@/types/paper';
 
 export default function Home() {
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [filterText, setFilterText] = useState('');
   
   const { 
     papers, 
@@ -30,9 +30,7 @@ export default function Home() {
   } = useSemanticScholar();
 
   const handleSearch = async (query: string) => {
-    const results = await searchPapers(query);
-    setSearchResults(results);
-    setShowSearchResults(true);
+    return await searchPapers(query);
   };
 
   const handleAddPaper = async (paper: SearchResult) => {
@@ -77,10 +75,6 @@ export default function Home() {
     }
   };
 
-  const handleBackToLibrary = () => {
-    setShowSearchResults(false);
-    setSearchResults([]);
-  };
 
   const handleJumpToSourcePaper = (paperId: string) => {
     const element = document.getElementById(`paper-${paperId}`);
@@ -96,6 +90,25 @@ export default function Home() {
     }
   };
 
+  // Filter papers based on search text
+  const filteredPapers = useMemo(() => {
+    if (!filterText.trim()) return papers;
+    
+    const searchTerms = filterText.toLowerCase().split(' ').filter(term => term.length > 0);
+    
+    return papers.filter(paper => {
+      const searchableText = [
+        paper.title,
+        paper.abstract,
+        paper.authors.map(a => a.name).join(' '),
+        paper.venue || '',
+        paper.year?.toString() || ''
+      ].join(' ').toLowerCase();
+      
+      return searchTerms.every(term => searchableText.includes(term));
+    });
+  }, [papers, filterText]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -106,27 +119,48 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <header className="mb-6 subtle-border p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-light mb-1 tracking-wide">
-                Literature Review Platform
-              </h1>
-              <p className="text-[var(--muted)] text-xs font-light">
-                Search and organize research papers from Semantic Scholar
-              </p>
+      {/* Fixed Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-[var(--border)]">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-6">
+              <Logo />
+              <div className="h-6 w-px bg-[var(--border)]"></div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Filter papers..."
+                  value={filterText}
+                  onChange={(e) => setFilterText(e.target.value)}
+                  className="w-64 px-3 py-1.5 text-sm bg-[var(--subtle)] border border-[var(--border)] rounded text-white placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                />
+                {filterText && (
+                  <button
+                    onClick={() => setFilterText('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-white transition-colors"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="text-xs text-[var(--muted)] font-light">
-              {papers.length} papers
+            <div className="flex items-center gap-4 text-xs text-[var(--muted)] font-light">
+              <button
+                onClick={() => setShowSearchModal(true)}
+                className="px-3 py-1.5 bg-[var(--accent)] text-black text-sm font-medium rounded hover:bg-[var(--accent-hover)] transition-colors"
+              >
+                + Search Papers
+              </button>
+              <span>
+                {filteredPapers.length}{filteredPapers.length !== papers.length && ` of ${papers.length}`} papers
+              </span>
             </div>
           </div>
-        </header>
+        </div>
+      </nav>
 
-        <SearchBar 
-          onSearch={handleSearch} 
-          isSearching={isSearching}
-        />
+      {/* Main Content */}
+      <div className="pt-16 max-w-7xl mx-auto px-6 py-6">
 
         {searchError && (
           <div className="mt-4 p-4 subtle-border bg-[var(--subtle)]">
@@ -134,34 +168,26 @@ export default function Home() {
           </div>
         )}
 
-        {showSearchResults ? (
-          <>
-            <div className="mt-6 mb-6">
-              <button
-                onClick={handleBackToLibrary}
-                className="text-[var(--accent)] hover:text-[var(--accent-hover)] text-sm font-light transition-colors"
-              >
-                ← Back to Library
-              </button>
-            </div>
-            <SearchResults
-              results={searchResults}
-              onAddPaper={handleAddPaper}
-              isPaperSaved={isPaperSaved}
-              isSavingPaper={isSavingPaper}
-            />
-          </>
-        ) : (
-          <PaperList
-            papers={papers}
-            onRemovePaper={removePaper}
-            onToggleExpansion={togglePaperExpansion}
-            onAddFromReference={handleAddFromReference}
-            onJumpToSourcePaper={handleJumpToSourcePaper}
-            isPaperSaved={isPaperSaved}
-            isSavingPaper={isSavingPaper}
-          />
-        )}
+        <PaperList
+          papers={filteredPapers}
+          onRemovePaper={removePaper}
+          onToggleExpansion={togglePaperExpansion}
+          onAddFromReference={handleAddFromReference}
+          onJumpToSourcePaper={handleJumpToSourcePaper}
+          isPaperSaved={isPaperSaved}
+          isSavingPaper={isSavingPaper}
+        />
+
+        <SearchModal
+          isOpen={showSearchModal}
+          onClose={() => setShowSearchModal(false)}
+          onSearch={handleSearch}
+          onAddPaper={handleAddPaper}
+          isPaperSaved={isPaperSaved}
+          isSavingPaper={isSavingPaper}
+          isSearching={isSearching}
+          searchError={searchError}
+        />
       </div>
     </div>
   );
