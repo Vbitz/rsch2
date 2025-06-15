@@ -10,6 +10,7 @@ interface PaperListProps {
   onAddFromReference: (paperId: string) => void;
   isPaperSaved: (paperId: string) => boolean;
   isSavingPaper: Record<string, boolean>;
+  onJumpToSourcePaper?: (paperId: string) => void;
 }
 
 export default function PaperList({ 
@@ -18,7 +19,8 @@ export default function PaperList({
   onToggleExpansion, 
   onAddFromReference, 
   isPaperSaved, 
-  isSavingPaper 
+  isSavingPaper,
+  onJumpToSourcePaper
 }: PaperListProps) {
   if (papers.length === 0) {
     return (
@@ -44,18 +46,20 @@ export default function PaperList({
         </div>
       </div>
       {papers.map((paper) => (
-        <PaperCard
-          key={paper.paperId}
-          paper={paper}
-          onAdd={() => onAddFromReference(paper.paperId)}
-          onRemove={() => onRemovePaper(paper.paperId)}
-          onToggleExpansion={() => onToggleExpansion(paper.paperId)}
-          onAddFromReference={onAddFromReference}
-          showRemoveButton={true}
-          isPaperSaved={isPaperSaved}
-          isSavingPaper={isSavingPaper[paper.paperId]}
-          isSavingPaperRecord={isSavingPaper}
-        />
+        <div key={paper.paperId} id={`paper-${paper.paperId}`}>
+          <PaperCard
+            paper={paper}
+            onAdd={() => onAddFromReference(paper.paperId)}
+            onRemove={() => onRemovePaper(paper.paperId)}
+            onToggleExpansion={() => onToggleExpansion(paper.paperId)}
+            onAddFromReference={onAddFromReference}
+            onJumpToSourcePaper={onJumpToSourcePaper}
+            showRemoveButton={true}
+            isPaperSaved={isPaperSaved}
+            isSavingPaper={isSavingPaper[paper.paperId]}
+            isSavingPaperRecord={isSavingPaper}
+          />
+        </div>
       ))}
     </div>
   );

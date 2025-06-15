@@ -8,6 +8,7 @@ interface PaperCardProps {
   onRemove?: () => void;
   onToggleExpansion?: () => void;
   onAddFromReference?: (paperId: string) => void;
+  onJumpToSourcePaper?: (paperId: string) => void;
   isAlreadySaved?: boolean;
   showAddButton?: boolean;
   showRemoveButton?: boolean;
@@ -22,6 +23,7 @@ export default function PaperCard({
   onRemove,
   onToggleExpansion,
   onAddFromReference,
+  onJumpToSourcePaper,
   isAlreadySaved = false,
   showAddButton = false,
   showRemoveButton = false,
@@ -80,14 +82,22 @@ export default function PaperCard({
             {isReferencedPaper && (
               <div className="flex gap-1 text-xs flex-shrink-0">
                 {referencedBy.length > 0 && (
-                  <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded subtle-border-light">
-                    Ref
-                  </span>
+                  <button
+                    onClick={() => onJumpToSourcePaper?.(referencedBy[0])}
+                    className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded subtle-border-light hover:bg-blue-500/30 transition-colors cursor-pointer"
+                    title={`Jump to source paper`}
+                  >
+                    Ref →
+                  </button>
                 )}
                 {citedBy.length > 0 && (
-                  <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded subtle-border-light">
-                    Cit
-                  </span>
+                  <button
+                    onClick={() => onJumpToSourcePaper?.(citedBy[0])}
+                    className="px-2 py-1 bg-green-500/20 text-green-300 rounded subtle-border-light hover:bg-green-500/30 transition-colors cursor-pointer"
+                    title={`Jump to citing paper`}
+                  >
+                    Cit →
+                  </button>
                 )}
               </div>
             )}

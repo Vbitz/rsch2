@@ -82,6 +82,20 @@ export default function Home() {
     setSearchResults([]);
   };
 
+  const handleJumpToSourcePaper = (paperId: string) => {
+    const element = document.getElementById(`paper-${paperId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add a brief highlight effect
+      element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+      element.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+      setTimeout(() => {
+        element.style.backgroundColor = '';
+        element.style.borderColor = '';
+      }, 2000);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -143,6 +157,7 @@ export default function Home() {
             onRemovePaper={removePaper}
             onToggleExpansion={togglePaperExpansion}
             onAddFromReference={handleAddFromReference}
+            onJumpToSourcePaper={handleJumpToSourcePaper}
             isPaperSaved={isPaperSaved}
             isSavingPaper={isSavingPaper}
           />
