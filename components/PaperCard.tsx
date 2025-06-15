@@ -16,7 +16,6 @@ interface PaperCardProps {
   showRemoveButton?: boolean;
   isPaperSaved?: (paperId: string) => boolean;
   isSavingPaper?: boolean;
-  isSavingPaperRecord?: Record<string, boolean>;
 }
 
 export default function PaperCard({
@@ -24,16 +23,13 @@ export default function PaperCard({
   onAdd,
   onRemove,
   onToggleExpansion,
-  onAddFromReference,
   onJumpToSourcePaper,
   onRetryFailed,
   onRefreshFull,
   isAlreadySaved = false,
   showAddButton = false,
   showRemoveButton = false,
-  isPaperSaved,
   isSavingPaper = false,
-  isSavingPaperRecord = {},
 }: PaperCardProps) {
   const isPaper = 'savedAt' in paper;
   const isExpanded = isPaper ? paper.isExpanded : false;
@@ -137,7 +133,7 @@ export default function PaperCard({
                 </div>
               ) : (
                 <div className="flex gap-3">
-                  {typeof paper.citescore === 'number' && (
+                  {isPaper && typeof paper.citescore === 'number' && (
                     <span className="text-[var(--accent)] font-medium">
                       {paper.citescore} cs
                     </span>

@@ -63,7 +63,6 @@ export default function PaperList({
             showRemoveButton={true}
             isPaperSaved={isPaperSaved}
             isSavingPaper={isSavingPaper[paper.paperId]}
-            isSavingPaperRecord={isSavingPaper}
           />
         </div>
       ))}

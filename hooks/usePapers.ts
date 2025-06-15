@@ -186,7 +186,7 @@ export function usePapers() {
           referencedBy: referencedBy.length > 0 ? referencedBy : undefined,
           citedBy: citedBy.length > 0 ? citedBy : undefined
         };
-      }).filter((paper): paper is Paper => paper !== null && paper.paperId !== paperId);
+      }).filter(paper => paper !== null && paper.paperId !== paperId) as Paper[];
       
       if (currentLibrary) {
         updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
