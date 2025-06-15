@@ -7,9 +7,10 @@ interface SearchResultsProps {
   results: SearchResult[];
   onAddPaper: (paper: SearchResult) => void;
   isPaperSaved: (paperId: string) => boolean;
+  isSavingPaper: Record<string, boolean>;
 }
 
-export default function SearchResults({ results, onAddPaper, isPaperSaved }: SearchResultsProps) {
+export default function SearchResults({ results, onAddPaper, isPaperSaved, isSavingPaper }: SearchResultsProps) {
   if (results.length === 0) {
     return (
       <div className="text-center py-12 subtle-border bg-[var(--subtle)]">
@@ -31,6 +32,7 @@ export default function SearchResults({ results, onAddPaper, isPaperSaved }: Sea
           paper={paper}
           onAdd={() => onAddPaper(paper)}
           isAlreadySaved={isPaperSaved(paper.paperId)}
+          isSavingPaper={isSavingPaper[paper.paperId]}
           showAddButton={true}
         />
       ))}

@@ -6,9 +6,20 @@ import PaperCard from './PaperCard';
 interface PaperListProps {
   papers: Paper[];
   onRemovePaper: (paperId: string) => void;
+  onToggleExpansion: (paperId: string) => void;
+  onAddFromReference: (paperId: string) => void;
+  isPaperSaved: (paperId: string) => boolean;
+  isSavingPaper: Record<string, boolean>;
 }
 
-export default function PaperList({ papers, onRemovePaper }: PaperListProps) {
+export default function PaperList({ 
+  papers, 
+  onRemovePaper, 
+  onToggleExpansion, 
+  onAddFromReference, 
+  isPaperSaved, 
+  isSavingPaper 
+}: PaperListProps) {
   if (papers.length === 0) {
     return (
       <div className="text-center py-12 subtle-border bg-[var(--subtle)]">
@@ -28,8 +39,14 @@ export default function PaperList({ papers, onRemovePaper }: PaperListProps) {
         <PaperCard
           key={paper.paperId}
           paper={paper}
+          onAdd={() => onAddFromReference(paper.paperId)}
           onRemove={() => onRemovePaper(paper.paperId)}
+          onToggleExpansion={() => onToggleExpansion(paper.paperId)}
+          onAddFromReference={onAddFromReference}
           showRemoveButton={true}
+          isPaperSaved={isPaperSaved}
+          isSavingPaper={isSavingPaper[paper.paperId]}
+          isSavingPaperRecord={isSavingPaper}
         />
       ))}
     </div>

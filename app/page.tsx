@@ -12,8 +12,22 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   
-  const { papers, isLoading, savePaper, removePaper, isPaperSaved } = usePapers();
-  const { searchPapers, isSearching, searchError } = useSemanticScholar();
+  const { 
+    papers, 
+    isLoading, 
+    savePaper, 
+    removePaper, 
+    togglePaperExpansion, 
+    isPaperSaved,
+    addReferencedPaper
+  } = usePapers();
+  const { 
+    searchPapers, 
+    fetchCompleteePaperData, 
+    isSearching, 
+    searchError, 
+    isSavingPaper 
+  } = useSemanticScholar();
 
   const handleSearch = async (query: string) => {
     const results = await searchPapers(query);
@@ -21,8 +35,46 @@ export default function Home() {
     setShowSearchResults(true);
   };
 
-  const handleAddPaper = (paper: SearchResult) => {
-    savePaper(paper);
+  const handleAddPaper = async (paper: SearchResult) => {
+    await savePaper(paper, fetchCompleteePaperData);
+  };
+
+  const handleAddFromReference = async (paperId: string) => {
+    // Check if it's already in the library as a referenced paper
+    const existingPaper = papers.find(p => p.paperId === paperId);
+    if (existingPaper && !existingPaper.isExplicitlyAdded) {
+      // Just promote the referenced paper to explicitly added
+      addReferencedPaper(paperId);
+      return;
+    }
+    
+    // If not in library at all, fetch and add with complete data
+    if (!isPaperSaved(paperId)) {
+      try {
+        const response = await fetch(
+          `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=paperId,title,abstract,authors,year,citationCount,url,venue,publicationDate`
+        );
+        
+        if (response.ok) {
+          const paperData = await response.json();
+          const searchResult: SearchResult = {
+            paperId: paperData.paperId,
+            title: paperData.title || 'Untitled',
+            abstract: paperData.abstract || 'No abstract available',
+            authors: paperData.authors || [],
+            year: paperData.year || 0,
+            citationCount: paperData.citationCount || 0,
+            url: paperData.url || `https://www.semanticscholar.org/paper/${paperId}`,
+            venue: paperData.venue,
+            publicationDate: paperData.publicationDate,
+          };
+          
+          await savePaper(searchResult, fetchCompleteePaperData);
+        }
+      } catch (error) {
+        console.error('Error adding paper from reference:', error);
+      }
+    }
   };
 
   const handleBackToLibrary = () => {
@@ -75,12 +127,17 @@ export default function Home() {
               results={searchResults}
               onAddPaper={handleAddPaper}
               isPaperSaved={isPaperSaved}
+              isSavingPaper={isSavingPaper}
             />
           </>
         ) : (
           <PaperList
             papers={papers}
             onRemovePaper={removePaper}
+            onToggleExpansion={togglePaperExpansion}
+            onAddFromReference={handleAddFromReference}
+            isPaperSaved={isPaperSaved}
+            isSavingPaper={isSavingPaper}
           />
         )}
       </div>

@@ -9,11 +9,29 @@ export interface Paper {
   venue?: string;
   publicationDate?: string;
   savedAt: string;
+  references?: PaperReference[];
+  citations?: PaperReference[];
+  referencesLoaded?: boolean;
+  citationsLoaded?: boolean;
+  isExpanded?: boolean;
+  isExplicitlyAdded?: boolean;
+  referencedBy?: string[];
+  citedBy?: string[];
 }
 
 export interface Author {
   authorId: string;
   name: string;
+}
+
+export interface PaperReference {
+  paperId: string;
+  title: string;
+  authors: Author[];
+  year?: number;
+  venue?: string;
+  citationCount?: number;
+  url?: string;
 }
 
 export interface SearchResult {
