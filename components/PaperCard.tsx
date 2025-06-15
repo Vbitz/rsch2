@@ -117,6 +117,11 @@ export default function PaperCard({
             <div className="text-xs text-[var(--muted)] font-light flex-shrink-0">
               {isPaper && (paper.references || paper.citations) ? (
                 <div className="flex gap-3">
+                  {typeof paper.citescore === 'number' && (
+                    <span className="text-[var(--accent)] font-medium">
+                      {paper.citescore} cs
+                    </span>
+                  )}
                   {paper.references && paper.references.length > 0 && (
                     <span>{paper.references.length} refs</span>
                   )}
@@ -127,7 +132,14 @@ export default function PaperCard({
                   <span>{paper.citationCount} total cits</span>
                 </div>
               ) : (
-                <span>{paper.citationCount} citations</span>
+                <div className="flex gap-3">
+                  {typeof paper.citescore === 'number' && (
+                    <span className="text-[var(--accent)] font-medium">
+                      {paper.citescore} cs
+                    </span>
+                  )}
+                  <span>{paper.citationCount} citations</span>
+                </div>
               )}
             </div>
           </div>

@@ -7,10 +7,12 @@ import PaperList from '@/components/PaperList';
 import SearchModal from '@/components/SearchModal';
 import Logo from '@/components/Logo';
 import { SearchResult } from '@/types/paper';
+import { calculateAllCitescores, sortByCitescore } from '@/utils/citescore';
 
 export default function Home() {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [filterText, setFilterText] = useState('');
+  const [sortByCitescoreEnabled, setSortByCitescoreEnabled] = useState(false);
   
   const { 
     papers, 
@@ -41,8 +43,8 @@ export default function Home() {
     // Check if it's already in the library as a referenced paper
     const existingPaper = papers.find(p => p.paperId === paperId);
     if (existingPaper && !existingPaper.isExplicitlyAdded) {
-      // Just promote the referenced paper to explicitly added
-      addReferencedPaper(paperId);
+      // Promote the referenced paper to explicitly added and fetch complete data
+      await addReferencedPaper(paperId, fetchCompleteePaperData);
       return;
     }
     
@@ -90,24 +92,36 @@ export default function Home() {
     }
   };
 
-  // Filter papers based on search text
-  const filteredPapers = useMemo(() => {
-    if (!filterText.trim()) return papers;
+  // Calculate citescores and filter/sort papers
+  const processedPapers = useMemo(() => {
+    // First calculate citescores for all papers
+    const papersWithCitescores = calculateAllCitescores(papers);
     
-    const searchTerms = filterText.toLowerCase().split(' ').filter(term => term.length > 0);
-    
-    return papers.filter(paper => {
-      const searchableText = [
-        paper.title,
-        paper.abstract,
-        paper.authors.map(a => a.name).join(' '),
-        paper.venue || '',
-        paper.year?.toString() || ''
-      ].join(' ').toLowerCase();
+    // Apply text filtering
+    let filtered = papersWithCitescores;
+    if (filterText.trim()) {
+      const searchTerms = filterText.toLowerCase().split(' ').filter(term => term.length > 0);
       
-      return searchTerms.every(term => searchableText.includes(term));
-    });
-  }, [papers, filterText]);
+      filtered = papersWithCitescores.filter(paper => {
+        const searchableText = [
+          paper.title,
+          paper.abstract,
+          paper.authors.map(a => a.name).join(' '),
+          paper.venue || '',
+          paper.year?.toString() || ''
+        ].join(' ').toLowerCase();
+        
+        return searchTerms.every(term => searchableText.includes(term));
+      });
+    }
+    
+    // Apply sorting
+    if (sortByCitescoreEnabled) {
+      return sortByCitescore(filtered);
+    }
+    
+    return filtered;
+  }, [papers, filterText, sortByCitescoreEnabled]);
 
   if (isLoading) {
     return (
@@ -146,13 +160,23 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-4 text-xs text-[var(--muted)] font-light">
               <button
+                onClick={() => setSortByCitescoreEnabled(!sortByCitescoreEnabled)}
+                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                  sortByCitescoreEnabled 
+                    ? 'bg-[var(--accent)] text-black hover:bg-[var(--accent-hover)]'
+                    : 'bg-[var(--subtle)] text-white hover:bg-[var(--muted-bg)] border border-[var(--border)]'
+                }`}
+              >
+                {sortByCitescoreEnabled ? '✓ ' : ''}Citescore
+              </button>
+              <button
                 onClick={() => setShowSearchModal(true)}
                 className="px-3 py-1.5 bg-[var(--accent)] text-black text-sm font-medium rounded hover:bg-[var(--accent-hover)] transition-colors"
               >
                 + Search Papers
               </button>
               <span>
-                {filteredPapers.length}{filteredPapers.length !== papers.length && ` of ${papers.length}`} papers
+                {processedPapers.length}{processedPapers.length !== papers.length && ` of ${papers.length}`} papers
               </span>
             </div>
           </div>
@@ -169,7 +193,7 @@ export default function Home() {
         )}
 
         <PaperList
-          papers={filteredPapers}
+          papers={processedPapers}
           onRemovePaper={removePaper}
           onToggleExpansion={togglePaperExpansion}
           onAddFromReference={handleAddFromReference}

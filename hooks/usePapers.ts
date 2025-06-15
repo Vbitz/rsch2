@@ -203,16 +203,59 @@ export function usePapers() {
     return papers.some(p => p.paperId === paperId);
   };
 
-  const addReferencedPaper = (paperId: string) => {
+  const addReferencedPaper = async (paperId: string, fetchCompleteData?: (paperId: string) => Promise<{ references: PaperReference[], citations: PaperReference[] }>) => {
     const paper = papers.find(p => p.paperId === paperId);
     if (paper && !paper.isExplicitlyAdded) {
-      const newPapers = papers.map(p =>
+      // First mark as explicitly added
+      let newPapers = papers.map(p =>
         p.paperId === paperId
           ? { ...p, isExplicitlyAdded: true }
           : p
       );
       setPapers(newPapers);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newPapers));
+
+      // Fetch complete paper details including abstract if missing
+      if (!paper.abstract || paper.abstract === '') {
+        try {
+          const response = await fetch(
+            `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=paperId,title,abstract,authors,year,citationCount,url,venue,publicationDate`
+          );
+          
+          if (response.ok) {
+            const paperData = await response.json();
+            newPapers = newPapers.map(p =>
+              p.paperId === paperId
+                ? { 
+                    ...p, 
+                    abstract: paperData.abstract || 'No abstract available',
+                    title: paperData.title || p.title,
+                    venue: paperData.venue || p.venue,
+                    publicationDate: paperData.publicationDate || p.publicationDate
+                  }
+                : p
+            );
+            setPapers(newPapers);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(newPapers));
+          }
+        } catch (error) {
+          console.error('Error fetching paper details during upgrade:', error);
+        }
+      }
+
+      // Then fetch references and citations if function is provided
+      if (fetchCompleteData && (!paper.referencesLoaded || !paper.citationsLoaded)) {
+        try {
+          const { references, citations } = await fetchCompleteData(paperId);
+          
+          const updatedPapers = addReferencesAndCitationsToLibrary(newPapers, paperId, references, citations);
+          
+          setPapers(updatedPapers);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPapers));
+        } catch (error) {
+          console.error('Error fetching complete paper data during upgrade:', error);
+        }
+      }
     }
   };
 

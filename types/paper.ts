@@ -17,6 +17,7 @@ export interface Paper {
   isExplicitlyAdded?: boolean;
   referencedBy?: string[];
   citedBy?: string[];
+  citescore?: number;
 }
 
 export interface Author {
