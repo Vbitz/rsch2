@@ -30,11 +30,19 @@ export default function PaperList({
     );
   }
 
+  const explicitPapers = papers.filter(p => p.isExplicitlyAdded);
+  const referencedPapers = papers.filter(p => !p.isExplicitlyAdded);
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-light text-white mb-6 tracking-wide">
-        Your Library ({papers.length} papers)
-      </h2>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-light text-white tracking-wide">
+          Your Library
+        </h2>
+        <div className="text-xs text-[var(--muted)] font-light">
+          {explicitPapers.length} added, {referencedPapers.length} referenced
+        </div>
+      </div>
       {papers.map((paper) => (
         <PaperCard
           key={paper.paperId}

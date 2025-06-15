@@ -92,14 +92,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-5xl mx-auto px-8 py-8">
-        <header className="mb-8 subtle-border p-6">
-          <h1 className="text-2xl font-light mb-3 tracking-wide">
-            Literature Review Platform
-          </h1>
-          <p className="text-[var(--muted)] text-sm font-light">
-            Search and organize research papers from Semantic Scholar
-          </p>
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <header className="mb-6 subtle-border p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-light mb-1 tracking-wide">
+                Literature Review Platform
+              </h1>
+              <p className="text-[var(--muted)] text-xs font-light">
+                Search and organize research papers from Semantic Scholar
+              </p>
+            </div>
+            <div className="text-xs text-[var(--muted)] font-light">
+              {papers.length} papers
+            </div>
+          </div>
         </header>
 
         <SearchBar 
