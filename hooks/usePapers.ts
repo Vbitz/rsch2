@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Paper, SearchResult, PaperReference } from '@/types/paper';
-
-const STORAGE_KEY = 'literature-review-papers';
+import { useLibraries } from './useLibraries';
 
 function addReferencesAndCitationsToLibrary(
   currentPapers: Paper[], 
@@ -97,25 +96,16 @@ function addReferencesAndCitationsToLibrary(
 }
 
 export function usePapers() {
-  const [papers, setPapers] = useState<Paper[]>([]);
+  const { currentLibrary, updateLibrary, currentLibraryId, isLoading: librariesLoading } = useLibraries();
   const [isLoading, setIsLoading] = useState(true);
+  
+  const papers = currentLibrary?.papers || [];
 
   useEffect(() => {
-    const loadPapers = () => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setPapers(JSON.parse(stored));
-        }
-      } catch (error) {
-        console.error('Error loading papers from localStorage:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadPapers();
-  }, []);
+    if (!librariesLoading) {
+      setIsLoading(false);
+    }
+  }, [librariesLoading]);
 
   const savePaper = async (searchResult: SearchResult, fetchCompleteData: (paperId: string) => Promise<{ references: PaperReference[], citations: PaperReference[] }>) => {
     // First add the paper with basic info
@@ -131,8 +121,9 @@ export function usePapers() {
     };
 
     const newPapers = [...papers, basicPaper];
-    setPapers(newPapers);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newPapers));
+    if (currentLibrary) {
+      updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
+    }
 
     // Then fetch complete data and update
     try {
@@ -140,8 +131,9 @@ export function usePapers() {
       
       const updatedPapers = addReferencesAndCitationsToLibrary(newPapers, searchResult.paperId, references, citations);
       
-      setPapers(updatedPapers);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPapers));
+      if (currentLibrary) {
+        updateLibrary(currentLibraryId, { ...currentLibrary, papers: updatedPapers });
+      }
     } catch (error) {
       console.error('Error fetching complete paper data:', error);
     }
@@ -170,8 +162,9 @@ export function usePapers() {
         };
       }).filter((paper): paper is Paper => paper !== null && paper.paperId !== paperId);
       
-      setPapers(newPapers);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newPapers));
+      if (currentLibrary) {
+        updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
+      }
     }
   };
 
@@ -181,8 +174,9 @@ export function usePapers() {
         ? { ...paper, isExpanded: !paper.isExpanded }
         : paper
     );
-    setPapers(newPapers);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newPapers));
+    if (currentLibrary) {
+      updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
+    }
   };
 
 
@@ -224,8 +218,9 @@ export function usePapers() {
 
     if (uniqueNewPapers.length > 0) {
       const updatedPapers = [...papers, ...uniqueNewPapers];
-      setPapers(updatedPapers);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPapers));
+      if (currentLibrary) {
+        updateLibrary(currentLibraryId, { ...currentLibrary, papers: updatedPapers });
+      }
     }
   };
 
@@ -238,8 +233,9 @@ export function usePapers() {
           ? { ...p, isExplicitlyAdded: true }
           : p
       );
-      setPapers(newPapers);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newPapers));
+      if (currentLibrary) {
+        updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
+      }
 
       // Fetch complete paper details including abstract if missing
       if (!paper.abstract || paper.abstract === '') {
@@ -261,8 +257,9 @@ export function usePapers() {
                   }
                 : p
             );
-            setPapers(newPapers);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newPapers));
+            if (currentLibrary) {
+              updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
+            }
           }
         } catch (error) {
           console.error('Error fetching paper details during upgrade:', error);
@@ -276,8 +273,9 @@ export function usePapers() {
           
           const updatedPapers = addReferencesAndCitationsToLibrary(newPapers, paperId, references, citations);
           
-          setPapers(updatedPapers);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPapers));
+          if (currentLibrary) {
+            updateLibrary(currentLibraryId, { ...currentLibrary, papers: updatedPapers });
+          }
         } catch (error) {
           console.error('Error fetching complete paper data during upgrade:', error);
         }

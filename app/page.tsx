@@ -2,17 +2,30 @@
 
 import { useState, useMemo } from 'react';
 import { usePapers } from '@/hooks/usePapers';
+import { useLibraries } from '@/hooks/useLibraries';
 import { useSemanticScholar } from '@/hooks/useSemanticScholar';
 import PaperList from '@/components/PaperList';
 import SearchModal from '@/components/SearchModal';
+import LibraryManagementModal from '@/components/LibraryManagementModal';
 import Logo from '@/components/Logo';
 import { SearchResult } from '@/types/paper';
 import { calculateAllCitescores, sortByCitescore } from '@/utils/citescore';
 
 export default function Home() {
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [sortByCitescoreEnabled, setSortByCitescoreEnabled] = useState(false);
+  
+  const {
+    currentLibrary,
+    currentLibraryId,
+    createLibrary,
+    deleteLibrary,
+    switchLibrary,
+    renameLibrary,
+    getLibraryMetadata
+  } = useLibraries();
   
   const { 
     papers, 
@@ -141,6 +154,21 @@ export default function Home() {
             <div className="flex items-center gap-6">
               <Logo />
               <div className="h-6 w-px bg-[var(--border)]"></div>
+              
+              {/* Library Switcher */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-[var(--muted)] font-light">
+                  {currentLibrary?.name || 'Loading...'}
+                </span>
+                <button
+                  onClick={() => setShowLibraryModal(true)}
+                  className="px-2 py-1 text-xs bg-[var(--subtle)] text-white rounded hover:bg-[var(--muted-bg)] transition-colors"
+                >
+                  Switch
+                </button>
+              </div>
+              
+              <div className="h-6 w-px bg-[var(--border)]"></div>
               <div className="relative">
                 <input
                   type="text"
@@ -213,6 +241,17 @@ export default function Home() {
           isSavingPaper={isSavingPaper}
           isSearching={isSearching}
           searchError={searchError}
+        />
+
+        <LibraryManagementModal
+          isOpen={showLibraryModal}
+          onClose={() => setShowLibraryModal(false)}
+          libraries={getLibraryMetadata()}
+          currentLibraryId={currentLibraryId}
+          onSwitchLibrary={switchLibrary}
+          onCreateLibrary={createLibrary}
+          onDeleteLibrary={deleteLibrary}
+          onRenameLibrary={renameLibrary}
         />
       </div>
     </div>
