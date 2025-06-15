@@ -39,13 +39,13 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-5xl mx-auto px-8 py-8">
+        <header className="mb-8 subtle-border p-6">
+          <h1 className="text-2xl font-light mb-3 tracking-wide">
             Literature Review Platform
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-[var(--muted)] text-sm font-light">
             Search and organize research papers from Semantic Scholar
           </p>
         </header>
@@ -56,17 +56,17 @@ export default function Home() {
         />
 
         {searchError && (
-          <div className="mt-4 p-4 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 rounded-md">
-            <p className="text-red-700 dark:text-red-400">Error: {searchError}</p>
+          <div className="mt-4 p-4 subtle-border bg-[var(--subtle)]">
+            <p className="text-white text-sm font-light">Error: {searchError}</p>
           </div>
         )}
 
         {showSearchResults ? (
           <>
-            <div className="mt-6 mb-4">
+            <div className="mt-6 mb-6">
               <button
                 onClick={handleBackToLibrary}
-                className="text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-[var(--accent)] hover:text-[var(--accent-hover)] text-sm font-light transition-colors"
               >
                 ← Back to Library
               </button>

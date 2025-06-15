@@ -18,20 +18,20 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-6">
-      <div className="flex gap-2">
+    <form onSubmit={handleSubmit} className="mb-8">
+      <div className="flex gap-3">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for papers (e.g., 'machine learning', 'climate change')"
-          className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          placeholder="Search for papers..."
+          className="flex-1 px-4 py-3 subtle-border bg-black text-white placeholder-[var(--muted)] focus:outline-none focus:border-[var(--border-light)] transition-colors text-sm font-light"
           disabled={isSearching}
         />
         <button
           type="submit"
           disabled={isSearching || !query.trim()}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-3 subtle-border bg-black text-white hover:bg-[var(--subtle)] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-light"
         >
           {isSearching ? 'Searching...' : 'Search'}
         </button>

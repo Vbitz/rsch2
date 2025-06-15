@@ -12,8 +12,8 @@ interface SearchResultsProps {
 export default function SearchResults({ results, onAddPaper, isPaperSaved }: SearchResultsProps) {
   if (results.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400 text-lg">
+      <div className="text-center py-12 subtle-border bg-[var(--subtle)]">
+        <p className="text-[var(--muted)] text-sm font-light">
           No results found. Try a different search query.
         </p>
       </div>
@@ -22,7 +22,7 @@ export default function SearchResults({ results, onAddPaper, isPaperSaved }: Sea
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+      <h2 className="text-xl font-light text-white mb-6 tracking-wide">
         Search Results ({results.length} papers)
       </h2>
       {results.map((paper) => (

@@ -20,32 +20,32 @@ export default function PaperCard({
   showRemoveButton = false,
 }: PaperCardProps) {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-sm">
+    <div className="subtle-border p-6 bg-black hover:bg-[var(--subtle)] transition-colors">
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-lg font-medium text-white mb-3">
             <a
               href={paper.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-blue-600 dark:hover:text-blue-400"
+              className="hover:text-[var(--accent)] transition-colors"
             >
               {paper.title}
             </a>
           </h3>
           
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          <div className="text-sm text-[var(--muted)] mb-3 font-light">
             {paper.authors.slice(0, 3).map(author => author.name).join(', ')}
             {paper.authors.length > 3 && ' et al.'}
             {paper.year && ` • ${paper.year}`}
             {paper.venue && ` • ${paper.venue}`}
           </div>
 
-          <p className="text-gray-700 dark:text-gray-300 mb-3 line-clamp-3">
+          <p className="text-white mb-4 line-clamp-3 text-sm font-light leading-relaxed">
             {paper.abstract}
           </p>
 
-          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-4 text-sm text-[var(--muted)] font-light">
             <span>Citations: {paper.citationCount}</span>
             {'savedAt' in paper && (
               <span>Saved: {new Date(paper.savedAt).toLocaleDateString()}</span>
@@ -58,10 +58,10 @@ export default function PaperCard({
             <button
               onClick={onAdd}
               disabled={isAlreadySaved}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-4 py-2 subtle-border text-sm font-light transition-all ${
                 isAlreadySaved
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700'
+                  ? 'bg-[var(--muted-bg)] text-[var(--muted)] cursor-not-allowed'
+                  : 'bg-black text-white hover:bg-[var(--subtle)] hover:border-[var(--border-light)]'
               }`}
             >
               {isAlreadySaved ? 'Saved' : 'Add to Library'}
@@ -71,7 +71,7 @@ export default function PaperCard({
           {showRemoveButton && (
             <button
               onClick={onRemove}
-              className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+              className="px-4 py-2 subtle-border bg-black text-white text-sm font-light hover:bg-[var(--subtle)] hover:border-[var(--border-light)] transition-all"
             >
               Remove
             </button>
