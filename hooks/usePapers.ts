@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Paper, SearchResult, PaperReference } from '@/types/paper';
 import { useLibraries } from './useLibraries';
+import { handleNetworkError } from '@/utils/network-errors';
 
 function addReferencesAndCitationsToLibrary(
   currentPapers: Paper[], 
@@ -118,6 +119,7 @@ export function usePapers() {
       references: [],
       citations: [],
       isExplicitlyAdded: true,
+      lastFetchAttempt: new Date().toISOString(),
     };
 
     const newPapers = [...papers, basicPaper];
@@ -131,11 +133,35 @@ export function usePapers() {
       
       const updatedPapers = addReferencesAndCitationsToLibrary(newPapers, searchResult.paperId, references, citations);
       
+      // Mark as successfully fetched
+      const finalPapers = updatedPapers.map(p =>
+        p.paperId === searchResult.paperId
+          ? { ...p, hasCompleteFetch: true, fetchErrors: undefined }
+          : p
+      );
+      
       if (currentLibrary) {
-        updateLibrary(currentLibraryId, { ...currentLibrary, papers: updatedPapers });
+        updateLibrary(currentLibraryId, { ...currentLibrary, papers: finalPapers });
       }
     } catch (error) {
       console.error('Error fetching complete paper data:', error);
+      
+      // Mark the error but keep the paper
+      const { message } = await handleNetworkError(error, undefined, 'fetching complete paper data');
+      const errorMsg = message;
+      const failedPapers = newPapers.map(p =>
+        p.paperId === searchResult.paperId
+          ? { 
+              ...p, 
+              hasCompleteFetch: false, 
+              fetchErrors: [errorMsg]
+            }
+          : p
+      );
+      
+      if (currentLibrary) {
+        updateLibrary(currentLibraryId, { ...currentLibrary, papers: failedPapers });
+      }
     }
   };
 
@@ -230,15 +256,23 @@ export function usePapers() {
       // First mark as explicitly added
       let newPapers = papers.map(p =>
         p.paperId === paperId
-          ? { ...p, isExplicitlyAdded: true }
+          ? { 
+              ...p, 
+              isExplicitlyAdded: true,
+              lastFetchAttempt: new Date().toISOString(),
+              fetchErrors: []
+            }
           : p
       );
       if (currentLibrary) {
         updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
       }
 
+      let hasErrors = false;
+      const errors: string[] = [];
+
       // Fetch complete paper details including abstract if missing
-      if (!paper.abstract || paper.abstract === '') {
+      if (!paper.abstract || paper.abstract === '' || !paper.hasCompleteFetch) {
         try {
           const response = await fetch(
             `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=paperId,title,abstract,authors,year,citationCount,url,venue,publicationDate`
@@ -257,11 +291,15 @@ export function usePapers() {
                   }
                 : p
             );
-            if (currentLibrary) {
-              updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
-            }
+          } else {
+            hasErrors = true;
+            const { message } = await handleNetworkError(null, response, 'fetching paper details');
+            errors.push(message);
           }
         } catch (error) {
+          hasErrors = true;
+          const { message } = await handleNetworkError(error, undefined, 'fetching paper details');
+          errors.push(message);
           console.error('Error fetching paper details during upgrade:', error);
         }
       }
@@ -271,15 +309,160 @@ export function usePapers() {
         try {
           const { references, citations } = await fetchCompleteData(paperId);
           
-          const updatedPapers = addReferencesAndCitationsToLibrary(newPapers, paperId, references, citations);
-          
-          if (currentLibrary) {
-            updateLibrary(currentLibraryId, { ...currentLibrary, papers: updatedPapers });
-          }
+          newPapers = addReferencesAndCitationsToLibrary(newPapers, paperId, references, citations);
         } catch (error) {
+          hasErrors = true;
+          const { message } = await handleNetworkError(error, undefined, 'fetching references and citations');
+          errors.push(message);
           console.error('Error fetching complete paper data during upgrade:', error);
         }
       }
+
+      // Update paper with completion status and any errors
+      newPapers = newPapers.map(p =>
+        p.paperId === paperId
+          ? {
+              ...p,
+              hasCompleteFetch: !hasErrors,
+              fetchErrors: errors.length > 0 ? errors : undefined
+            }
+          : p
+      );
+
+      if (currentLibrary) {
+        updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
+      }
+    }
+  };
+
+  const retryFailedPaper = async (paperId: string, fetchCompleteData?: (paperId: string) => Promise<{ references: PaperReference[], citations: PaperReference[] }>) => {
+    const paper = papers.find(p => p.paperId === paperId);
+    if (!paper || !paper.isExplicitlyAdded || (!paper.fetchErrors || paper.fetchErrors.length === 0)) {
+      return;
+    }
+
+    // Mark as attempting retry and clear previous errors
+    let newPapers = papers.map(p =>
+      p.paperId === paperId
+        ? { 
+            ...p, 
+            lastFetchAttempt: new Date().toISOString(),
+            fetchErrors: undefined
+          }
+        : p
+    );
+    if (currentLibrary) {
+      updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
+    }
+
+    let hasErrors = false;
+    const errors: string[] = [];
+
+    // Retry fetching complete paper details including abstract if missing
+    if (!paper.abstract || paper.abstract === '' || !paper.hasCompleteFetch) {
+      try {
+        const response = await fetch(
+          `https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=paperId,title,abstract,authors,year,citationCount,url,venue,publicationDate`
+        );
+        
+        if (response.ok) {
+          const paperData = await response.json();
+          newPapers = newPapers.map(p =>
+            p.paperId === paperId
+              ? { 
+                  ...p, 
+                  abstract: paperData.abstract || 'No abstract available',
+                  title: paperData.title || p.title,
+                  venue: paperData.venue || p.venue,
+                  publicationDate: paperData.publicationDate || p.publicationDate
+                }
+              : p
+          );
+        } else {
+          hasErrors = true;
+          const { message } = await handleNetworkError(null, response, 'fetching paper details');
+          errors.push(message);
+        }
+      } catch (error) {
+        hasErrors = true;
+        const { message } = await handleNetworkError(error, undefined, 'fetching paper details');
+        errors.push(message);
+        console.error('Error retrying paper details fetch:', error);
+      }
+    }
+
+    // Retry fetching references and citations if function is provided
+    if (fetchCompleteData && (!paper.referencesLoaded || !paper.citationsLoaded)) {
+      try {
+        const { references, citations } = await fetchCompleteData(paperId);
+        
+        newPapers = addReferencesAndCitationsToLibrary(newPapers, paperId, references, citations);
+      } catch (error) {
+        hasErrors = true;
+        const { message } = await handleNetworkError(error, undefined, 'fetching references and citations');
+        errors.push(message);
+        console.error('Error retrying complete paper data fetch:', error);
+      }
+    }
+
+    // Update paper with completion status and any errors
+    newPapers = newPapers.map(p =>
+      p.paperId === paperId
+        ? {
+            ...p,
+            hasCompleteFetch: !hasErrors,
+            fetchErrors: errors.length > 0 ? errors : undefined
+          }
+        : p
+    );
+
+    if (currentLibrary) {
+      updateLibrary(currentLibraryId, { ...currentLibrary, papers: newPapers });
+    }
+  };
+
+  const refreshFullPaper = async (paperId: string, fetchCompleteData?: (paperId: string) => Promise<{ references: PaperReference[], citations: PaperReference[] }>) => {
+    const paper = papers.find(p => p.paperId === paperId);
+    if (!paper || !paper.isExplicitlyAdded || !fetchCompleteData || !currentLibrary) return;
+    
+    try {
+      // Refetch complete data for this explicitly added paper
+      const { references, citations } = await fetchCompleteData(paperId);
+      
+      // Update with new references and citations, which will add any missing half-added papers
+      const updatedPapers = addReferencesAndCitationsToLibrary(papers, paperId, references, citations);
+      
+      // Mark as successfully refreshed
+      const finalPapers = updatedPapers.map(p =>
+        p.paperId === paperId
+          ? { 
+              ...p, 
+              hasCompleteFetch: true, 
+              fetchErrors: undefined,
+              lastFetchAttempt: new Date().toISOString()
+            }
+          : p
+      );
+      
+      updateLibrary(currentLibraryId, { ...currentLibrary, papers: finalPapers });
+    } catch (error) {
+      console.error(`Error refreshing paper ${paperId}:`, error);
+      
+      // Mark the error but keep the paper
+      const { message } = await handleNetworkError(error, undefined, 'refreshing paper data');
+      const errorMsg = message;
+      const failedPapers = papers.map(p =>
+        p.paperId === paperId
+          ? { 
+              ...p, 
+              hasCompleteFetch: false, 
+              fetchErrors: [errorMsg],
+              lastFetchAttempt: new Date().toISOString()
+            }
+          : p
+      );
+      
+      updateLibrary(currentLibraryId, { ...currentLibrary, papers: failedPapers });
     }
   };
 
@@ -292,5 +475,7 @@ export function usePapers() {
     isPaperSaved,
     addReferencedPaper,
     bulkAddPapers,
+    retryFailedPaper,
+    refreshFullPaper,
   };
 }

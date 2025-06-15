@@ -9,6 +9,8 @@ interface PaperCardProps {
   onToggleExpansion?: () => void;
   onAddFromReference?: (paperId: string) => void;
   onJumpToSourcePaper?: (paperId: string) => void;
+  onRetryFailed?: (paperId: string) => void;
+  onRefreshFull?: (paperId: string) => void;
   isAlreadySaved?: boolean;
   showAddButton?: boolean;
   showRemoveButton?: boolean;
@@ -24,6 +26,8 @@ export default function PaperCard({
   onToggleExpansion,
   onAddFromReference,
   onJumpToSourcePaper,
+  onRetryFailed,
+  onRefreshFull,
   isAlreadySaved = false,
   showAddButton = false,
   showRemoveButton = false,
@@ -161,6 +165,11 @@ export default function PaperCard({
           {'savedAt' in paper && (
             <div className="text-xs text-[var(--muted)] font-light">
               Saved: {new Date(paper.savedAt).toLocaleDateString()}
+              {paper.fetchErrors && paper.fetchErrors.length > 0 && (
+                <span className="ml-2 text-yellow-400">
+                  ⚠ Incomplete data
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -196,6 +205,26 @@ export default function PaperCard({
               className="px-3 py-2 subtle-border bg-black text-white text-xs font-light hover:bg-[var(--subtle)] hover:border-[var(--border-light)] transition-all"
             >
               Remove
+            </button>
+          )}
+          
+          {isPaper && isExplicitlyAdded && onRefreshFull && (
+            <button
+              onClick={() => onRefreshFull(paper.paperId)}
+              className="px-3 py-2 subtle-border bg-purple-500/20 text-purple-300 text-xs font-light hover:bg-purple-500/30 hover:border-purple-400/50 transition-all"
+              title="Refresh paper details and restore missing references"
+            >
+              ↻ Refresh
+            </button>
+          )}
+          
+          {isPaper && paper.fetchErrors && paper.fetchErrors.length > 0 && onRetryFailed && (
+            <button
+              onClick={() => onRetryFailed(paper.paperId)}
+              className="px-3 py-2 subtle-border bg-yellow-500/20 text-yellow-300 text-xs font-light hover:bg-yellow-500/30 hover:border-yellow-400/50 transition-all"
+              title={`Retry fetching data. Errors: ${paper.fetchErrors.join(', ')}`}
+            >
+              Retry
             </button>
           )}
         </div>

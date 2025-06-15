@@ -18,6 +18,9 @@ export interface Paper {
   referencedBy?: string[];
   citedBy?: string[];
   citescore?: number;
+  hasCompleteFetch?: boolean;
+  lastFetchAttempt?: string;
+  fetchErrors?: string[];
 }
 
 export interface Author {

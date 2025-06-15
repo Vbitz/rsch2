@@ -35,7 +35,9 @@ export default function Home() {
     togglePaperExpansion, 
     isPaperSaved,
     addReferencedPaper,
-    bulkAddPapers
+    bulkAddPapers,
+    retryFailedPaper,
+    refreshFullPaper
   } = usePapers();
   const { 
     searchPapers, 
@@ -104,6 +106,14 @@ export default function Home() {
         element.style.borderColor = '';
       }, 2000);
     }
+  };
+
+  const handleRetryFailedPaper = async (paperId: string) => {
+    await retryFailedPaper(paperId, fetchCompleteePaperData);
+  };
+
+  const handleRefreshFullPaper = async (paperId: string) => {
+    await refreshFullPaper(paperId, fetchCompleteePaperData);
   };
 
   // Calculate citescores and filter/sort papers
@@ -227,6 +237,8 @@ export default function Home() {
           onToggleExpansion={togglePaperExpansion}
           onAddFromReference={handleAddFromReference}
           onJumpToSourcePaper={handleJumpToSourcePaper}
+          onRetryFailed={handleRetryFailedPaper}
+          onRefreshFull={handleRefreshFullPaper}
           isPaperSaved={isPaperSaved}
           isSavingPaper={isSavingPaper}
         />

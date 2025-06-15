@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SearchResult, PaperReference } from '@/types/paper';
+import { handleNetworkError } from '@/utils/network-errors';
 
 const API_BASE_URL = 'https://api.semanticscholar.org/graph/v1';
 
@@ -20,7 +21,8 @@ export function useSemanticScholar() {
       );
 
       if (!response.ok) {
-        throw new Error(`Search failed: ${response.statusText}`);
+        const { message } = await handleNetworkError(null, response, 'searching for papers');
+        throw new Error(message);
       }
 
       const data = await response.json();
@@ -37,8 +39,8 @@ export function useSemanticScholar() {
         publicationDate: paper.publicationDate,
       }));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      setSearchError(errorMessage);
+      const { message } = await handleNetworkError(error, undefined, 'searching for papers');
+      setSearchError(message);
       return [];
     } finally {
       setIsSearching(false);
@@ -58,27 +60,53 @@ export function useSemanticScholar() {
         fetch(`${API_BASE_URL}/paper/${paperId}/citations?fields=paperId,title,authors,year,venue,citationCount,url&limit=50`)
       ]);
 
-      const references = referencesResponse.ok ? 
-        (await referencesResponse.json()).data.map((ref: any) => ({
-          paperId: ref.citedPaper.paperId,
-          title: ref.citedPaper.title || 'Untitled',
-          authors: ref.citedPaper.authors || [],
-          year: ref.citedPaper.year,
-          venue: ref.citedPaper.venue,
-          citationCount: ref.citedPaper.citationCount,
-          url: ref.citedPaper.url || `https://www.semanticscholar.org/paper/${ref.citedPaper.paperId}`,
-        })) : [];
+      let references: PaperReference[] = [];
+      if (referencesResponse.ok) {
+        try {
+          const refData = await referencesResponse.json();
+          if (refData && refData.data && Array.isArray(refData.data)) {
+            references = refData.data.map((ref: any) => ({
+              paperId: ref.citedPaper.paperId,
+              title: ref.citedPaper.title || 'Untitled',
+              authors: ref.citedPaper.authors || [],
+              year: ref.citedPaper.year,
+              venue: ref.citedPaper.venue,
+              citationCount: ref.citedPaper.citationCount,
+              url: ref.citedPaper.url || `https://www.semanticscholar.org/paper/${ref.citedPaper.paperId}`,
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing references response:', error);
+          throw new Error('Failed to parse references data from Semantic Scholar API');
+        }
+      } else {
+        const { message } = await handleNetworkError(null, referencesResponse, 'fetching paper references');
+        throw new Error(message);
+      }
 
-      const citations = citationsResponse.ok ?
-        (await citationsResponse.json()).data.map((citation: any) => ({
-          paperId: citation.citingPaper.paperId,
-          title: citation.citingPaper.title || 'Untitled',
-          authors: citation.citingPaper.authors || [],
-          year: citation.citingPaper.year,
-          venue: citation.citingPaper.venue,
-          citationCount: citation.citingPaper.citationCount,
-          url: citation.citingPaper.url || `https://www.semanticscholar.org/paper/${citation.citingPaper.paperId}`,
-        })) : [];
+      let citations: PaperReference[] = [];
+      if (citationsResponse.ok) {
+        try {
+          const citData = await citationsResponse.json();
+          if (citData && citData.data && Array.isArray(citData.data)) {
+            citations = citData.data.map((citation: any) => ({
+              paperId: citation.citingPaper.paperId,
+              title: citation.citingPaper.title || 'Untitled',
+              authors: citation.citingPaper.authors || [],
+              year: citation.citingPaper.year,
+              venue: citation.citingPaper.venue,
+              citationCount: citation.citingPaper.citationCount,
+              url: citation.citingPaper.url || `https://www.semanticscholar.org/paper/${citation.citingPaper.paperId}`,
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing citations response:', error);
+          throw new Error('Failed to parse citations data from Semantic Scholar API');
+        }
+      } else {
+        const { message } = await handleNetworkError(null, citationsResponse, 'fetching paper citations');
+        throw new Error(message);
+      }
 
       return { references, citations };
     } catch (error) {

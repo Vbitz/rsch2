@@ -11,6 +11,8 @@ interface PaperListProps {
   isPaperSaved: (paperId: string) => boolean;
   isSavingPaper: Record<string, boolean>;
   onJumpToSourcePaper?: (paperId: string) => void;
+  onRetryFailed?: (paperId: string) => void;
+  onRefreshFull?: (paperId: string) => void;
 }
 
 export default function PaperList({ 
@@ -20,7 +22,9 @@ export default function PaperList({
   onAddFromReference, 
   isPaperSaved, 
   isSavingPaper,
-  onJumpToSourcePaper
+  onJumpToSourcePaper,
+  onRetryFailed,
+  onRefreshFull
 }: PaperListProps) {
   if (papers.length === 0) {
     return (
@@ -54,6 +58,8 @@ export default function PaperList({
             onToggleExpansion={() => onToggleExpansion(paper.paperId)}
             onAddFromReference={onAddFromReference}
             onJumpToSourcePaper={onJumpToSourcePaper}
+            onRetryFailed={onRetryFailed}
+            onRefreshFull={onRefreshFull}
             showRemoveButton={true}
             isPaperSaved={isPaperSaved}
             isSavingPaper={isSavingPaper[paper.paperId]}
