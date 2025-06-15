@@ -10,6 +10,7 @@ interface SearchModalProps {
   onClose: () => void;
   onSearch: (query: string) => Promise<SearchResult[]>;
   onAddPaper: (paper: SearchResult) => Promise<void>;
+  onBulkAddPapers?: (papers: SearchResult[]) => Promise<void>;
   isPaperSaved: (paperId: string) => boolean;
   isSavingPaper: Record<string, boolean>;
   isSearching: boolean;
@@ -21,6 +22,7 @@ export default function SearchModal({
   onClose,
   onSearch,
   onAddPaper,
+  onBulkAddPapers,
   isPaperSaved,
   isSavingPaper,
   isSearching,
@@ -28,11 +30,13 @@ export default function SearchModal({
 }: SearchModalProps) {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       setSearchResults([]);
       setHasSearched(false);
+      setIsBulkAdding(false);
     }
   }, [isOpen]);
 
@@ -41,6 +45,25 @@ export default function SearchModal({
     setSearchResults(results);
     setHasSearched(true);
   };
+
+  const handleBulkAdd = async () => {
+    if (!onBulkAddPapers || searchResults.length === 0) return;
+    
+    setIsBulkAdding(true);
+    try {
+      // Filter out papers that are already saved
+      const newPapers = searchResults.filter(paper => !isPaperSaved(paper.paperId));
+      if (newPapers.length > 0) {
+        await onBulkAddPapers(newPapers);
+      }
+    } catch (error) {
+      console.error('Error bulk adding papers:', error);
+    } finally {
+      setIsBulkAdding(false);
+    }
+  };
+
+  const newPapersCount = searchResults.filter(paper => !isPaperSaved(paper.paperId)).length;
 
   if (!isOpen) return null;
 
@@ -77,6 +100,24 @@ export default function SearchModal({
             </div>
           )}
         </div>
+
+        {/* Bulk Add Section */}
+        {hasSearched && searchResults.length > 0 && onBulkAddPapers && newPapersCount > 0 && (
+          <div className="p-4 border-b border-[var(--border)] bg-[var(--subtle)]/20">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-[var(--muted)] font-light">
+                Found {searchResults.length} papers, {newPapersCount} new
+              </div>
+              <button
+                onClick={handleBulkAdd}
+                disabled={isBulkAdding}
+                className="px-4 py-2 bg-[var(--accent)] text-black text-sm font-medium rounded hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isBulkAdding ? 'Adding...' : `+ Add All ${newPapersCount} as References`}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Results */}
         <div className="overflow-y-auto max-h-[60vh]">

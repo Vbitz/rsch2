@@ -21,7 +21,8 @@ export default function Home() {
     removePaper, 
     togglePaperExpansion, 
     isPaperSaved,
-    addReferencedPaper
+    addReferencedPaper,
+    bulkAddPapers
   } = usePapers();
   const { 
     searchPapers, 
@@ -207,6 +208,7 @@ export default function Home() {
           onClose={() => setShowSearchModal(false)}
           onSearch={handleSearch}
           onAddPaper={handleAddPaper}
+          onBulkAddPapers={bulkAddPapers}
           isPaperSaved={isPaperSaved}
           isSavingPaper={isSavingPaper}
           isSearching={isSearching}

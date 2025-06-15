@@ -203,6 +203,32 @@ export function usePapers() {
     return papers.some(p => p.paperId === paperId);
   };
 
+  const bulkAddPapers = async (searchResults: SearchResult[]) => {
+    const newPapers = searchResults.map(result => {
+      const basicPaper: Paper = {
+        ...result,
+        savedAt: new Date().toISOString(),
+        isExpanded: false,
+        referencesLoaded: false,
+        citationsLoaded: false,
+        references: [],
+        citations: [],
+        isExplicitlyAdded: false, // Add as referenced papers (half-added)
+      };
+      return basicPaper;
+    });
+
+    // Filter out any papers that are already in the library
+    const existingPaperIds = new Set(papers.map(p => p.paperId));
+    const uniqueNewPapers = newPapers.filter(paper => !existingPaperIds.has(paper.paperId));
+
+    if (uniqueNewPapers.length > 0) {
+      const updatedPapers = [...papers, ...uniqueNewPapers];
+      setPapers(updatedPapers);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPapers));
+    }
+  };
+
   const addReferencedPaper = async (paperId: string, fetchCompleteData?: (paperId: string) => Promise<{ references: PaperReference[], citations: PaperReference[] }>) => {
     const paper = papers.find(p => p.paperId === paperId);
     if (paper && !paper.isExplicitlyAdded) {
@@ -267,5 +293,6 @@ export function usePapers() {
     togglePaperExpansion,
     isPaperSaved,
     addReferencedPaper,
+    bulkAddPapers,
   };
 }
